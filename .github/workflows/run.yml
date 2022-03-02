@@ -36,7 +36,7 @@ jobs:
           sudo -E docker run -dit --name test -v $(pwd):/nlohmann_json archlinux /bin/bash
           sudo -E docker exec test /nlohmann_json/run.sh
 
-      - name: Show Boost Static Library
+      - name: Show Json Static Library
         run: |
           sudo -E ls -al
           sudo -E pwd
