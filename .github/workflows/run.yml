@@ -1,0 +1,85 @@
+name: CI Build
+
+on: 
+  push:
+  schedule:
+    - cron: '0 23 * * *'
+
+jobs:
+  archlinux:
+    name: Archlinux Build Check
+    runs-on: ubuntu-latest
+    #container: docker.io/library/archlinux:latest
+    steps:
+      - name: Checkout branch
+        uses: actions/checkout@v2
+
+      - name: Update Ubuntu
+        run: |
+          sudo -E apt update
+          #sudo -E apt upgrade
+          sudo -E apt install git
+
+      - name: Install Docker
+        run: |
+          sudo -E curl -fsSL https://get.docker.com -o get-docker.sh
+          sudo -E sudo sh get-docker.sh
+          rm get-docker.sh
+
+      - name: Pull Archlinux
+        run: |
+          sudo -E dockerd > /tmp/docker.log 2>&1 &
+          sudo -E docker pull archlinux
+
+      - name: Run Docker
+        run: |
+          sudo -E docker run -dit --name test -v $(pwd):/nlohmann_json archlinux /bin/bash
+          sudo -E docker exec test /nlohmann_json/run.sh
+
+      - name: Show Boost Static Library
+        run: |
+          sudo -E ls -al
+          sudo -E pwd
+
+      - name: Commit files
+        run: |
+          git config --local user.email "lw2957409438@gmail.com"
+          git config --local user.name "blackwilliam"
+          git add .
+          #git commit -m "Boost Update From Archlinux" -a
+          remote_repo="https://${GITHUB_ACTOR}:${{secrets.ARCH}}@github.com/${GITHUB_REPOSITORY}.git"
+          if [ -z "$(git status --porcelain)" ]
+          then
+              echo "nothing to update."
+          else
+              git commit -m "triggle by commit ${{ github.sha }}. created by ${{ github.workflow }}." -a
+              git push "${remote_repo}" HEAD:main
+          fi
+
+      #- name: Push changes
+        #uses: ad-m/github-push-action@master
+        #with:
+          #github_token: ${{ secrets.ARCH }}
+          #branch: ${{ github.ref }}
+
+#jobs:
+  #hello_world_job:
+    #runs-on: ubuntu-latest
+    #name: A job to say hello
+    #steps:
+      ## To use this repository's private action,
+      ## you must check out the repository
+      #- name: Checkout
+        #uses: actions/checkout@v2
+      #- name: Hello world action step
+        #uses: ./ # Uses an action in the root directory
+        #id: hello
+        #with:
+          #who-to-greet: 'Mona the Octocat'
+      ## Use the output from the `hello` step
+      #- name: Get the output time
+        #run: |
+          #echo "docker image is ${{ steps.hello.outputs.time }}"
+          #sudo -E ls -al
+          #sudo -E pwd
+          #sudo -E docker ps -a
